@@ -3,6 +3,7 @@
 namespace Angle\CFDI\Node\CFDI40;
 
 use Angle\CFDI\Catalog\CFDIType;
+use Angle\CFDI\Catalog\TaxFactorType;
 use Angle\CFDI\CFDINode;
 use Angle\CFDI\CFDIException;
 use Angle\CFDI\CFDIInterface;
@@ -887,9 +888,14 @@ class CFDI40 extends CFDINode implements CFDIInterface
         //(These are the "totals" for each type of retention and transfer taxes)
         //We will also create the node out of these rounded amounts
         //We will also calculate the total retained and transferred out of these rounded amounts
+        //Exempt taxes must exist only at concept level and excluded from global
         $totalTransferredAmount = '0';
         $transferredList = new TaxesTransferredList([]);
         foreach ($transfers as $k => $t) {
+            if ($t['factorType'] === TaxFactorType::EXEMPT) {
+                    continue;
+            }
+
             $t['base'] = Math::round($t['base'], 2);
             $t['amount'] = Math::round($t['amount'], 2);
             $t['rate'] = Math::round($t['rate'], 6);
@@ -929,7 +935,7 @@ class CFDI40 extends CFDINode implements CFDIInterface
         $totalLocalRetainedAmount = '0';
 
         if ($this->getLocalTaxes()) {
-            //TODO: Verify if we need to round these local taxes 
+            //TODO: Verify if we need to round these local taxes
             foreach ($this->getLocalTaxes()->getTaxesTransferred() as $tax) {
                 $totalLocalTransferredAmount = Math::add($totalLocalTransferredAmount, $tax->getAmount());
             }
@@ -1025,15 +1031,22 @@ class CFDI40 extends CFDINode implements CFDIInterface
             }
 
             if ($it->getTaxes()) {
-                // Clean up the object in case there are no Transfers
+                //Clean up the object in case there are no Transfers
+                //Sets null rate and amount when its TaxFactorType::EXEMPT
                 if ($it->getTaxes()->getTransferredList()) {
                     if (empty($it->getTaxes()->getTransferredList()->getTransfers())) {
                         $it->getTaxes()->setTransferredList(NULL);
                     } else {
                         foreach ($it->getTaxes()->getTransferredList()->getTransfers() as $t) {
                             $t->setBase(Math::round($t->getBase(), 6));
-                            $t->setAmount(Math::round($t->getAmount(), 6));
-                            $t->setRate(Math::round($t->getRate(), 6));
+
+                            if ($t->getFactorType() === TaxFactorType::EXEMPT) {
+                                $t->setRate(null);
+                                $t->setAmount(null);
+                            }else{
+                                $t->setAmount(Math::round($t->getAmount(), 6));
+                                $t->setRate(Math::round($t->getRate(), 6));
+                            }
                         }
                     }
                 }
