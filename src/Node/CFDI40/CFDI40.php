@@ -1043,7 +1043,7 @@ class CFDI40 extends CFDINode implements CFDIInterface
                             if ($t->getFactorType() === TaxFactorType::EXEMPT) {
                                 $t->setRate(null);
                                 $t->setAmount(null);
-                            }else{
+                            } else {
                                 $t->setAmount(Math::round($t->getAmount(), 6));
                                 $t->setRate(Math::round($t->getRate(), 6));
                             }
@@ -1094,6 +1094,12 @@ class CFDI40 extends CFDINode implements CFDIInterface
                 foreach ($this->getTaxes()->getRetainedList()->getRetentions() as $t) {
                     $t->setAmount(Math::round($t->getAmount(), 2));
                 }
+            }
+
+            if ($this->taxes->getTransferredList() === null
+                && $this->taxes->getRetainedList() === null
+            ) {
+                $this->taxes = null;
             }
         }
 
