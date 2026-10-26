@@ -487,8 +487,16 @@ class CFDI40 extends CFDINode implements CFDIInterface
         // Taxes Node
         if ($this->taxes) {
             // TODO: What happens if the taxes is not set?
-            $taxesNode = $this->taxes->toDOMElement($dom);
-            $node->appendChild($taxesNode);
+            $transferredList = $this->taxes->getTransferredList();
+            $retainedList = $this->taxes->getRetainedList();
+
+            $hasTransfers = $transferredList !== null && !empty($transferredList->getTransfers());
+            $hasRetentions = $retainedList !== null && !empty($retainedList->getRetentions());
+
+            if ($hasTransfers || $hasRetentions) {
+                $taxesNode = $this->taxes->toDOMElement($dom);
+                $node->appendChild($taxesNode);
+            }
         }
 
         // Complements Node
